@@ -1,0 +1,27 @@
+{
+  "priority": 1,
+  "scenarioName": "UserProfileFailure",
+  "requiredScenarioState": "Error",
+  "request": {
+    "method": "GET",
+    "urlPattern": "/api/users/([a-zA-Z0-9-]+)/profile"
+  },
+  "response": {
+    "status": 500,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "error": "Internal Server Error",
+      "message": "{{pickRandom 'Database connection failed' 'User profile service temporarily unavailable' 'Internal system error'}}",
+      "timestamp": "{{now format='yyyy-MM-dd'}}T{{now format='HH:mm:ss'}}Z",
+      "userId": "{{request.pathSegments.[2]}}"
+    },
+    "delayDistribution": {
+      "type": "uniform",
+      "lower": 1200,
+      "upper": 1800
+    },
+    "transformers": ["response-template"]
+  }
+}

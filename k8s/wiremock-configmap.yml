@@ -1,0 +1,265 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wiremock-files
+  namespace: recommendation
+data:
+  product-category-error.json: |
+    {
+      "priority": 1,
+      "scenarioName": "ProductCatalogFailure",
+      "requiredScenarioState": "Error",
+      "request": {
+        "method": "GET",
+        "urlPattern": "/api/products/category/([a-zA-Z0-9-]+)"
+      },
+      "response": {
+        "status": 503,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "error": "Service Unavailable",
+          "message": "{{pickRandom 'Product catalog service error' 'Category service temporarily down' 'Upstream service timeout'}}",
+          "timestamp": "{{now format='yyyy-MM-dd'}}T{{now format='HH:mm:ss'}}Z",
+          "category": "{{request.pathSegments.[3]}}"
+        },
+        "delayDistribution": {
+          "type": "uniform",
+          "lower": 1200,
+          "upper": 1800
+        },
+        "transformers": ["response-template"]
+      }
+    }
+  product-category-success.json: |
+    {
+      "priority": 2,
+      "request": {
+        "method": "GET",
+        "urlPattern": "/api/products/category/([a-zA-Z0-9-]+)"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "category": "{{request.pathSegments.[3]}}",
+          "totalProducts": "{{randomInt lower=50 upper=200}}",
+          "products": [
+            {
+              "productId": "PROD-{{randomInt lower=1000 upper=9999}}",  "name": "Premium {{request.pathSegments.[3]}} Item",
+              "currentPrice": "{{randomDecimal min=50.0 max=200.0}}",  "originalPrice": "{{randomDecimal min=200.0 max=300.0}}",  "averageRating": "{{randomDecimal min=4.0 max=5.0}}",
+              "totalReviews": "{{randomInt lower=100 upper=500}}",
+              "availability": "IN_STOCK"
+            },
+            {
+              "productId": "PROD-{{randomInt lower=1000 upper=9999}}",  "name": "Standard {{request.pathSegments.[3]}} Item",
+              "currentPrice": "{{randomDecimal min=30.0 max=100.0}}",  "originalPrice": "{{randomDecimal min=100.0 max=150.0}}",  "averageRating": "{{randomDecimal min=3.5 max=4.5}}",
+              "totalReviews": "{{randomInt lower=50 upper=200}}",
+              "availability": "IN_STOCK"
+            },
+            {
+              "productId": "PROD-{{randomInt lower=1000 upper=9999}}",  "name": "Budget {{request.pathSegments.[3]}} Item",
+              "currentPrice": "{{randomDecimal min=10.0 max=50.0}}",  "originalPrice": "{{randomDecimal min=50.0 max=80.0}}",  "averageRating": "{{randomDecimal min=3.0 max=4.0}}",
+              "totalReviews": "{{randomInt lower=20 upper=100}}",
+              "availability": "{{pickRandom 'IN_STOCK' 'LOW_STOCK'}}"  }
+          ],
+          "filters": {
+            "priceRange": {
+              "min": "{{randomDecimal min=5.0 max=20.0}}",
+              "max": "{{randomDecimal min=200.0 max=500.0}}"
+            },
+            "brands": [
+              "{{pickRandom 'Apple' 'Samsung' 'Nike' 'Adidas' 'Sony'}}",
+              "{{pickRandom 'Apple' 'Samsung' 'Nike' 'Adidas' 'Sony'}}",
+              "{{pickRandom 'Apple' 'Samsung' 'Nike' 'Adidas' 'Sony'}}"
+            ]
+          }
+        },
+        "delayDistribution": {
+          "type": "uniform",
+          "lower": 1200,
+          "upper": 1800
+        },
+        "transformers": ["response-template"]
+      }
+    }
+  product-category-trigger-error.json: |-
+    {
+      "priority": 0,
+      "scenarioName": "ProductCatalogFailure",
+      "requiredScenarioState": "Started",
+      "newScenarioState": "Error",
+      "request": {
+        "method": "POST",
+        "url": "/__test/product-category/error"
+      },
+      "response": {
+        "status": 200,
+        "body": "Scenario switched to Error"
+      }
+    }
+  product-category-trigger-success.json: |-
+    {
+      "priority": 0,
+      "scenarioName": "ProductCatalogFailure",
+      "requiredScenarioState": "Error",
+      "newScenarioState": "Started",
+      "request": {
+        "method": "POST",
+        "url": "/__test/product-category/success"
+      },
+      "response": {
+        "status": 200,
+        "body": "Scenario switched to Success"
+      }
+    }
+  user-profile-error.json: |
+    {
+      "priority": 1,
+      "scenarioName": "UserProfileFailure",
+      "requiredScenarioState": "Error",
+      "request": {
+        "method": "GET",
+        "urlPattern": "/api/users/([a-zA-Z0-9-]+)/profile"
+      },
+      "response": {
+        "status": 500,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "error": "Internal Server Error",
+          "message": "{{pickRandom 'Database connection failed' 'User profile service temporarily unavailable' 'Internal system error'}}",
+          "timestamp": "{{now format='yyyy-MM-dd'}}T{{now format='HH:mm:ss'}}Z",
+          "userId": "{{request.pathSegments.[2]}}"
+        },
+        "delayDistribution": {
+          "type": "uniform",
+          "lower": 1200,
+          "upper": 1800
+        },
+        "transformers": ["response-template"]
+      }
+    }
+  user-profile-not-found.json: |
+    {
+      "priority": 1,
+      "request": {
+        "method": "GET",
+        "urlPattern": "/api/users/(notfound|unknown|invalid)/profile"  },
+      "response": {
+        "status": 404,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "error": "User Not Found",
+          "message": "User profile not found",
+          "timestamp": "{{now format='yyyy-MM-dd'}}T{{now format='HH:mm:ss'}}Z",
+          "userId": "{{request.pathSegments.[2]}}"
+        },
+        "fixedDelayMilliseconds": 100,
+        "transformers": ["response-template"]
+      }
+    }
+  user-profile-success.json: |-
+    {
+      "priority": 2,
+      "request": {
+        "method": "GET",
+        "urlPattern": "/api/users/([a-zA-Z0-9-]+)/profile"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "userId": "{{request.pathSegments.[2]}}",
+          "demographics": {
+            "age": "{{randomInt lower=18 upper=65}}",
+            "gender": "{{pickRandom 'male' 'female' 'other'}}",
+            "location": "{{pickRandom 'New York' 'Los Angeles' 'Chicago' 'Houston' 'Phoenix'}}",
+            "income": "{{pickRandom '25000-50000' '50000-75000' '75000-100000' '100000+'}}",
+            "education": "{{pickRandom 'High_School' 'Bachelor' 'Master' 'PhD'}}"
+          },
+          "preferences": {
+            "categories": [
+              "{{pickRandom 'electronics' 'clothing' 'books' 'home' 'sports'}}",
+              "{{pickRandom 'electronics' 'clothing' 'books' 'home' 'sports'}}",
+              "{{pickRandom 'electronics' 'clothing' 'books' 'home' 'sports'}}"
+            ],
+            "priceRange": {
+              "min": "{{randomInt lower=10 upper=50}}",
+              "max": "{{randomInt lower=100 upper=500}}"
+            },
+            "brands": [
+              "{{pickRandom 'Apple' 'Samsung' 'Nike' 'Adidas' 'Sony'}}",
+              "{{pickRandom 'Apple' 'Samsung' 'Nike' 'Adidas' 'Sony'}}"
+            ],
+            "style": "{{pickRandom 'minimalist' 'luxury' 'budget conscious' 'trendy' 'classic'}}"
+          },
+          "purchaseHistory": {
+            "totalOrders": "{{randomInt lower=5 upper=50}}",
+            "averageOrderValue": "{{randomDecimal min=50.0 max=300.0}}",
+            "lastPurchaseDate": "{{now format='yyyy-MM-dd'}}",
+            "favoriteCategories": [
+              "{{pickRandom 'electronics' 'clothing' 'books' 'home' 'sports'}}",
+              "{{pickRandom 'electronics' 'clothing' 'books' 'home' 'sports'}}"
+            ],
+            "seasonalPatterns": {
+              "spring": "{{randomInt lower=10 upper=40}}",
+              "summer": "{{randomInt lower=10 upper=40}}",
+              "fall": "{{randomInt lower=10 upper=40}}",
+              "winter": "{{randomInt lower=10 upper=40}}"
+            }
+          },
+          "behaviorPatterns": {
+            "browsingFrequency": "{{pickRandom 'daily' 'weekly' 'monthly'}}",
+            "purchaseFrequency": "{{pickRandom 'weekly' 'monthly' 'quarterly'}}",
+            "priceSensitivity": "{{pickRandom 'low' 'medium' 'high'}}",
+            "brandLoyalty": "{{pickRandom 'low' 'medium' 'high'}}"
+          }
+        },
+        "delayDistribution": {
+          "type": "uniform",
+          "lower": 1200,
+          "upper": 1800
+        },
+        "transformers": ["response-template"]
+      }
+    }
+  user-profile-trigger-error.json: |-
+    {
+      "priority": 0,
+      "scenarioName": "UserProfileFailure",
+      "requiredScenarioState": "Started",
+      "newScenarioState": "Error",
+      "request": {
+        "method": "POST",
+        "url": "/__test/user-profile/error"
+      },
+      "response": {
+        "status": 200,
+        "body": "Scenario switched to Error"
+      }
+    }
+  user-profile-trigger-success.json: |-
+    {
+      "priority": 0,
+      "scenarioName": "UserProfileFailure",
+      "requiredScenarioState": "Error",
+      "newScenarioState": "Started",
+      "request": {
+        "method": "POST",
+        "url": "/__test/user-profile/success"
+      },
+      "response": {
+        "status": 200,
+        "body": "Scenario switched to Success"
+      }
+    }
+

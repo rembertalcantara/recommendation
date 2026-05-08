@@ -1,0 +1,146 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: recommendation
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+  namespace: recommendation
+type: Opaque
+stringData:
+  MYSQL_ROOT_PASSWORD: root
+  MYSQL_PASSWORD: recommendation
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+  namespace: recommendation
+data:
+  MYSQL_DATABASE: recommendations
+  MYSQL_USER: recommendation
+---
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-data
+  namespace: recommendation
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recommendation-mysql
+  namespace: recommendation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: recommendation-mysql
+  template:
+    metadata:
+      labels:
+        app: recommendation-mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.4
+          ports:
+            - containerPort: 3306
+          envFrom:
+            - configMapRef:
+                name: mysql-config
+            - secretRef:
+                name: mysql-secret
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mysqladmin ping -h localhost -u recommendation -precommendation
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 10
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mysqladmin ping -h localhost -u recommendation -precommendation
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 10
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: mysql-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: recommendation-mysql
+  namespace: recommendation
+spec:
+  type: ClusterIP
+  selector:
+    app: recommendation-mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wiremock
+  namespace: recommendation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wiremock
+  template:
+    metadata:
+      labels:
+        app: wiremock
+    spec:
+      containers:
+        - name: wiremock
+          image: wiremock/wiremock:3.5.2
+          args:
+            - "--global-response-templating"
+            - "--verbose"
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: wiremock-files
+              mountPath: /home/wiremock/mappings
+      volumes:
+        - name: wiremock-files
+          configMap:
+            name: wiremock-files
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wiremock
+  namespace: recommendation
+spec:
+  type: ClusterIP
+  selector:
+    app: wiremock
+  ports:
+    - port: 8080
+      targetPort: 8080

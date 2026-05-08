@@ -1,0 +1,28 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: recommendation-mysql
+    environment:
+      MYSQL_DATABASE: recommendations
+      MYSQL_USER: recommendation
+      MYSQL_PASSWORD: recommendation
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h localhost -u recommendation -precommendation" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  wiremock:
+    image: wiremock/wiremock:3.5.2
+    command: ["--global-response-templating", "--verbose"]
+    ports: ["8089:8080"]
+    volumes:
+      - ./wiremock:/home/wiremock
+      -
+volumes:
+  mysql_data:

@@ -1,0 +1,14 @@
+{
+  "priority": 0,
+  "scenarioName": "ProductCatalogFailure",
+  "requiredScenarioState": "Error",
+  "newScenarioState": "Started",
+  "request": {
+    "method": "POST",
+    "url": "/__test/product-category/success"
+  },
+  "response": {
+    "status": 200,
+    "body": "Scenario switched to Success"
+  }
+}

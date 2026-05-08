@@ -1,0 +1,14 @@
+{
+  "priority": 0,
+  "scenarioName": "UserProfileFailure",
+  "requiredScenarioState": "Error",
+  "newScenarioState": "Started",
+  "request": {
+    "method": "POST",
+    "url": "/__test/user-profile/success"
+  },
+  "response": {
+    "status": 200,
+    "body": "Scenario switched to Success"
+  }
+}
