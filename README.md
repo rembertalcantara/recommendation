@@ -7,7 +7,9 @@ Repositories:
 ---
 
 https://github.com/rembertalcantara/user-service
+
 https://github.com/rembertalcantara/product-service
+
 https://github.com/rembertalcantara/recommendation-service
 
 ---
